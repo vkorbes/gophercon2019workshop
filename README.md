@@ -8,6 +8,7 @@
 - Slides.
 - Cloud set-up.
 - E-mail attendees installation instructions.
+- minikube installation instructions.
 
 # Schedule
 
@@ -77,6 +78,63 @@ Then add the location to your PATH with e.g. `export PATH=$PATH:~/location`
 - stern: https://github.com/wercker/stern#Installation
 - Squash: https://github.com/solo-io/squash/releases
 
+# Kubernetes cluster
+
+For this workshop we'll need a Kubernetes cluster. We recommend one of three options:
+
+1. minikube
+2. Docker for Desktop
+3. Digital Ocean
+
+## minikube
+
+- Install minikube
+- Set line 51 of `apps/manifests.yml` to `NodePort`.
+- `kubectl apply -f apps/manifests.yml`
+- `minikube service [deployment-name] --url`
+- `curl [deployment-url:port]`
+
+## Docker for Desktop
+
+## Digital Ocean
+
+Digital Ocean has graciously provided us credits for us to use their managed Kubernetes cluster offering for this workshop.
+
+### Follow these steps to set it up:
+- Create a Digital Ocean account if you don't have one
+- Click `API` on the dashboard, then `Generate New Token`.
+- Install the `doctl` tool, either from the `bin/` folder, or using one of the package managers listed [here](https://github.com/digitalocean/doctl#installing-doctl).
+- `doctl auth init -t [your-api-token]`
+- Create a Kubernetes cluster using DO's dashboard. (Create → Clusters). Minimum settings should work.
+- `doctl kubernetes cluster kubeconfig save [cluster-name]`kube
+- Create a load balancer in the same region as your cluster. (Create → Load Balancers)
+- Now wait for an external IP using `kubectl get service dep-svc1 -w`.
+- You can now access it e.g. `curl [external-ip:port]`.
+- Lastly, once the workshop is over, go to the Kubernetes and Load Balancer pages and delete them.
+
+### To do this using mostly the command line:
+- Create your token as explained above.
+- `export TOKEN=[your-token]`
+- Create a Kubernetes cluster with `doctl k8s cluster create gophercluster --count 1 --size s-1vcpu-2gb --region sfo2`.
+- List your droplets and take note of the ID of the droplet you just created. The droplet will be called something like `gophercluster-default-pool-oz6v`. Droplet list: `curl -X GET -H "Content-Type: application/json" -H "Authorization: Bearer $TOKEN" "https://api.digitalocean.com/v2/droplets?page=1&per_page=1"`
+- Create a load balancer, using your droplet's ID:
+```
+curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer $TOKEN" -d '{"name":"gopherbalancer","region":"sfo2","droplet_ids":[<DROPLET_ID1>], "forwarding_rules": [
+{
+  "entry_protocol": "http",
+  "entry_port": 80,
+  "target_protocol": "http",
+  "target_port": 80
+}
+]}' "https://api.digitalocean.com/v2/load_balancers"
+```
+- Now wait for an external IP using `kubectl get service dep-svc1 -w`, and access it `curl [external-ip:port]`.
+- For cleanup, start by deleting your Kubernetes cluster: `doctl k8s cluster delete gophercluster`
+- Get the ID of your load balancer: `curl -X GET -H "Content-Type: application/json" -H "Authorization: Bearer $TOKEN" "https://api.digitalocean.com/v2/load_balancers"`
+- And delete it: `curl -X DELETE -H "Content-Type: application/json" -H "Authorization: Bearer $TOKEN" "https://api.digitalocean.com/v2/load_balancers/<ID>"`
+
+Further reference: https://developers.digitalocean.com/documentation/v2/
+
 # Tools
 
 ## No tools: docker&kubectl
@@ -94,76 +152,7 @@ To do that, you need to have set up in advance:
 - Dockerfile
 - Kubernetes manifest
 
-```dockerfile
-FROM golang:1.11.9-alpine3.9
-WORKDIR /go/src/app
-RUN apk add --no-cache git gcc musl-dev
-ENV GO111MODULE=on
-EXPOSE 8080
-COPY main.go go.mod ./
-RUN go build -gcflags "all=-N -l" main.go
-CMD ["./main"]
-```
-
-```yml
-apiVersion: v1
-kind: Pod
-metadata:
-name: mycontainer
-spec:
-containers:
-    - image: registry.com/user/repo:1.0
-    name: mycontainer
-    ports:
-        - containerPort: 8080
-        name: http
-        protocol: TCP
-```
-
-Ideally you would set up a combination of deployment/service/ingress:
-
-```yml
- apiVersion: extensions/v1beta1
- kind: Deployment
- metadata:
-   name: my-deployment
- spec:
-   replicas: 1
-   selector:
-     matchLabels:
-       app: my-app
-   template:
-     metadata:
-       labels:
-         app: my-app
-     spec:
-       containers:
-       - name: my-app
-         image: registry.com/user/repo:1.0
-         imagePullPolicy: Always
-         ports:
-         - containerPort: 5000
-
- apiVersion: v1
- kind: Service
- metadata:
-   name: my-deployment
- spec:
-   ports:
-   - port: 5000
-     targetPort: 5000
-   selector:
-     app: my-app
-
-apiVersion: networking.k8s.io/v1beta1
-kind: Ingress
-metadata:
-  name: test-ingress
-spec:
-  backend:
-    serviceName: my-app
-    servicePort: 80
-```
+See `app/manifests.yml` and `app/service1/Dockerfile` for examples of Kubernetes manifests and a Dockerfile.
 
 ## Helm
 
