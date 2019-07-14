@@ -48,7 +48,7 @@ metadata:
 spec:
   # When using minikube, set the type to "NodePort"
   # When using Digital Ocean, set it to "LoadBalancer"
-  type: LoadBalancer
+  type: NodePort
   ports:
   - port: 8080
     targetPort: 8080
@@ -67,7 +67,7 @@ spec:
   ports:
   - port: 8080
     targetPort: 8080
-    nodePort: 30001
+    nodePort: 30002
     protocol: TCP
     name: http
   selector:

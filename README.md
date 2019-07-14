@@ -9,6 +9,7 @@
 - Cloud set-up.
 - E-mail attendees installation instructions.
 - minikube installation instructions.
+- Add entr & kubectx
 
 # Schedule
 
@@ -164,7 +165,7 @@ See `app/manifests.yml` and `app/service1/Dockerfile` for examples of Kubernetes
 ### kubefwd
 
 - What's kubefwd?
-- kubefwd in action.
+- kubefwd in action: `sudo kubefwd svc -n namespace`
 
 ### Telepresence
 
