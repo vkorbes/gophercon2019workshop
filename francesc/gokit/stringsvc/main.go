@@ -1,13 +1,12 @@
 package main
 
 import (
-	"context"
 	"flag"
 	"fmt"
 	"net/http"
 	"os"
+	"time"
 
-	"github.com/go-kit/kit/endpoint"
 	"github.com/go-kit/kit/log"
 	httptransport "github.com/go-kit/kit/transport/http"
 )
@@ -18,22 +17,18 @@ func main() {
 
 	logger := log.NewLogfmtLogger(os.Stderr)
 
-	svc := stringService{}
+	var svc StringService
+	svc = stringService{}
+	svc = loggingMiddleware{logger, svc}
 
-	var uppercase endpoint.Endpoint
-	uppercase = makeUppercaseEndpoint(svc)
-	uppercase = loggingMiddleware(log.With(logger, "method", "uppercase"))(uppercase)
 	http.Handle("/uppercase", httptransport.NewServer(
-		uppercase,
+		makeUppercaseEndpoint(svc),
 		decodeUppercaseRequest,
 		encodeResponse,
 	))
 
-	var count endpoint.Endpoint
-	count = makeCountEndpoint(svc)
-	count = loggingMiddleware(log.With(logger, "method", "count"))(count)
 	http.Handle("/count", httptransport.NewServer(
-		count,
+		makeCountEndpoint(svc),
 		decodeCountRequest,
 		encodeResponse,
 	))
@@ -41,12 +36,34 @@ func main() {
 	fmt.Println(http.ListenAndServe(fmt.Sprintf(":%d", *port), nil))
 }
 
-func loggingMiddleware(logger log.Logger) endpoint.Middleware {
-	return func(next endpoint.Endpoint) endpoint.Endpoint {
-		return func(ctx context.Context, request interface{}) (interface{}, error) {
-			logger.Log("msg", "calling endpoint")
-			defer logger.Log("msg", "called endpoint")
-			return next(ctx, request)
-		}
-	}
+type loggingMiddleware struct {
+	logger log.Logger
+	next   StringService
+}
+
+func (mw loggingMiddleware) Uppercase(s string) (output string, err error) {
+	defer func(begin time.Time) {
+		mw.logger.Log(
+			"method", "uppercase",
+			"input", s,
+			"output", output,
+			"err", err,
+			"took", time.Since(begin),
+		)
+	}(time.Now())
+
+	return mw.next.Uppercase(s)
+}
+
+func (mw loggingMiddleware) Count(s string) (n int) {
+	defer func(begin time.Time) {
+		mw.logger.Log(
+			"method", "count",
+			"input", s,
+			"n", n,
+			"took", time.Since(begin),
+		)
+	}(time.Now())
+
+	return mw.next.Count(s)
 }
