@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"time"
 
+	"github.com/ellenkorbes/gophercon2019workshop/francesc/gokit/stringsvc/handler"
+	"github.com/ellenkorbes/gophercon2019workshop/francesc/gokit/stringsvc/service"
 	"github.com/go-kit/kit/log"
-	httptransport "github.com/go-kit/kit/transport/http"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 func main() {
@@ -17,53 +18,15 @@ func main() {
 
 	logger := log.NewLogfmtLogger(os.Stderr)
 
-	var svc StringService
-	svc = stringService{}
-	svc = loggingMiddleware{logger, svc}
+	svc := service.New()
+	svc = service.WithLogger(svc, logger)
+	svc = service.WithMetrics(svc)
 
-	http.Handle("/uppercase", httptransport.NewServer(
-		makeUppercaseEndpoint(svc),
-		decodeUppercaseRequest,
-		encodeResponse,
-	))
+	http.Handle("/uppercase", handler.Uppercase(svc))
+	http.Handle("/count", handler.Count(svc))
+	http.Handle("/metrics", promhttp.Handler())
 
-	http.Handle("/count", httptransport.NewServer(
-		makeCountEndpoint(svc),
-		decodeCountRequest,
-		encodeResponse,
-	))
-
-	fmt.Println(http.ListenAndServe(fmt.Sprintf(":%d", *port), nil))
-}
-
-type loggingMiddleware struct {
-	logger log.Logger
-	next   StringService
-}
-
-func (mw loggingMiddleware) Uppercase(s string) (output string, err error) {
-	defer func(begin time.Time) {
-		mw.logger.Log(
-			"method", "uppercase",
-			"input", s,
-			"output", output,
-			"err", err,
-			"took", time.Since(begin),
-		)
-	}(time.Now())
-
-	return mw.next.Uppercase(s)
-}
-
-func (mw loggingMiddleware) Count(s string) (n int) {
-	defer func(begin time.Time) {
-		mw.logger.Log(
-			"method", "count",
-			"input", s,
-			"n", n,
-			"took", time.Since(begin),
-		)
-	}(time.Now())
-
-	return mw.next.Count(s)
+	address := fmt.Sprintf(":%d", *port)
+	logger.Log("msg", "HTTP", "addr", address)
+	logger.Log("err", http.ListenAndServe(address, nil))
 }
