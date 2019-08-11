@@ -1,73 +1,14 @@
 # Workshop
 
-[Go & Kubernetes Sitting In A Tree](https://www.gophercon.com/agenda/session/70232)!
+This is the outline for the GopherCon 2019 workshop [Go & Kubernetes Sitting In A Tree](https://www.gophercon.com/agenda/session/70232).
 
-# TODO
+## Code
 
-- This doc.
-- Slides.
-- Cloud set-up.
-- E-mail attendees installation instructions.
-- minikube installation instructions.
-- Add entr & kubectx
+The code for the app used in the workshop lives here: https://github.com/campoy/links
 
-# Schedule
+The application is a URL shortener.
 
-
-### 09:00 — Introduction:
-- Overview of the Go part.
-- Overview of the Kubernetes part.
-- Overview of the example app. (It has 3 services.)
-
-### 10:30 — Short break.
-
-### 10:50 — First steps & interacting with pods in a cluster:
-- Something something Go.
-- Deploy service 1/3 to cluster—old school kubectl&docker.
-- Local Go app talks to remote service using _kubefwd._
-- Something something Go.
-- Install Dgraph with _Helm._
-- Deploy service 2/3—old school kubectl&docker.
-- Service 3/3, still local, talks to services 1 & 2 using _Telepresence._
-
-### 12:00 — Lunch.
-
-### 13:00 — Advanced techniques & the optimal development workflow:
-- Something something Go.
-- Using _Skaffold & Tilt_ as a quick and easy solution.
-- Something something Go.
-- Delete 2/3 manifests.
-- Using _Garden_ for complex systems. Dependencies, tests (unit & e2e), in-cluster building.
-- Something something Go.
-
-### 15:00 — Short break.
-
-### 15:20 — Debugging:
-- Something something Go.
-- Basics of _kubectl debugging._
-- Something something Go.
-- Distributed debuggers with _Squash._
-
-### 16:30 — Closing words:
-- Conclusion for Go.
-- Conclusion for Kubernetes.
-
-### 17:00 — Beer! 🍻
-
-Total: 6h 20m.
-
-# Installation
-
-## Bundle
-
-Download here:
-- Linux
-- macOS
-- Windows
-
-Then add the location to your PATH with e.g. `export PATH=$PATH:~/location`
-
-## DIY
+## Tools
 
 - kubectl: https://kubernetes.io/docs/tasks/tools/install-kubectl/
 - kubefwd: https://github.com/txn2/kubefwd/releases
@@ -79,147 +20,100 @@ Then add the location to your PATH with e.g. `export PATH=$PATH:~/location`
 - stern: https://github.com/wercker/stern#Installation
 - Squash: https://github.com/solo-io/squash/releases
 
-# Kubernetes cluster
+## Lessons
 
-For this workshop we'll need a Kubernetes cluster. We recommend one of three options:
+- Dockerize an application: https://github.com/campoy/links/tree/master/step1
+- Run it on Kubernetes: https://github.com/campoy/links/tree/master/step2
+- Split it into microservices: https://github.com/campoy/links/tree/master/step3
+- Dockerize your microservices: https://github.com/campoy/links/tree/master/step4
+- Can you run it on Kubernetes? https://github.com/campoy/links/tree/master/step5
+- Implementing gRPC: https://github.com/campoy/links/tree/master/step6
+- Implementing a gRPC gateway: https://github.com/campoy/links/tree/master/step7
+- The complete application: https://github.com/campoy/links/tree/master/step8
 
-1. minikube
-2. Docker for Desktop
-3. Digital Ocean
+## Notes
 
-## minikube
+### Kubernetes Tooling Talk
 
-- Install minikube
-- Set line 51 of `apps/manifests.yml` to `NodePort`.
-- `kubectl apply -f apps/manifests.yml`
-- `minikube service [deployment-name] --url`
-- `curl [deployment-url:port]`
+The talk presented early in the morning was slightly adapted from this one:
+- Video: https://www.youtube.com/watch?v=dIs8FwJzVI8
+- Slides https://garden.slides.com/ellenkorbes/k8sdevtools?token=t3egVfZS#/
 
-## Docker for Desktop
+### Creating an optimized Dockerfile for Go
 
-## Digital Ocean
+The main things to keep in mind are:
+- *Use vendoring*, so are you continously re-build your application during development, dependencies don't have to be downloaded every single time.
+- *Use multi-stage builds*, so your images are small and you don't have to wait for them to be moved around.
+- Example: 
+https://github.com/campoy/links/blob/master/step5/links/web.Dockerfile
 
-Digital Ocean has graciously provided us credits for us to use their managed Kubernetes cluster offering for this workshop.
-
-### Follow these steps to set it up:
-- Create a Digital Ocean account if you don't have one
-- Click `API` on the dashboard, then `Generate New Token`.
-- Install the `doctl` tool, either from the `bin/` folder, or using one of the package managers listed [here](https://github.com/digitalocean/doctl#installing-doctl).
-- `doctl auth init -t [your-api-token]`
-- Create a Kubernetes cluster using DO's dashboard. (Create → Clusters). Minimum settings should work.
-- `doctl kubernetes cluster kubeconfig save [cluster-name]`kube
-- Create a load balancer in the same region as your cluster. (Create → Load Balancers)
-- Now wait for an external IP using `kubectl get service dep-svc1 -w`.
-- You can now access it e.g. `curl [external-ip:port]`.
-- Lastly, once the workshop is over, go to the Kubernetes and Load Balancer pages and delete them.
-
-### To do this using mostly the command line:
-- Create your token as explained above.
-- `export TOKEN=[your-token]`
-- Create a Kubernetes cluster with `doctl k8s cluster create gophercluster --count 1 --size s-1vcpu-2gb --region sfo2`.
-- List your droplets and take note of the ID of the droplet you just created. The droplet will be called something like `gophercluster-default-pool-oz6v`. Droplet list: `curl -X GET -H "Content-Type: application/json" -H "Authorization: Bearer $TOKEN" "https://api.digitalocean.com/v2/droplets?page=1&per_page=1"`
-- Create a load balancer, using your droplet's ID:
-```
-curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer $TOKEN" -d '{"name":"gopherbalancer","region":"sfo2","droplet_ids":[<DROPLET_ID1>], "forwarding_rules": [
-{
-  "entry_protocol": "http",
-  "entry_port": 80,
-  "target_protocol": "http",
-  "target_port": 80
-}
-]}' "https://api.digitalocean.com/v2/load_balancers"
-```
-- Now wait for an external IP using `kubectl get service dep-svc1 -w`, and access it `curl [external-ip:port]`.
-- For cleanup, start by deleting your Kubernetes cluster: `doctl k8s cluster delete gophercluster`
-- Get the ID of your load balancer: `curl -X GET -H "Content-Type: application/json" -H "Authorization: Bearer $TOKEN" "https://api.digitalocean.com/v2/load_balancers"`
-- And delete it: `curl -X DELETE -H "Content-Type: application/json" -H "Authorization: Bearer $TOKEN" "https://api.digitalocean.com/v2/load_balancers/<ID>"`
-
-Further reference: https://developers.digitalocean.com/documentation/v2/
-
-# Tools
-
-## No tools: docker&kubectl
+## Development workflow with only ko cluster with kubectl&docker
 
 The main workflow consists of:
 
 - Make changes to your code.
 - Build a new image: `docker build -t user/repo:1.0 .`
-- Tag it: `docker tag image registry.com/user/repo:1.0`
 - Push the image to a registry: `docker push registry.com/user/repo:1.0`
 - Update your cluster: `kubectl apply -f obj.yaml`
 
 To do that, you need to have set up in advance:
 - docker login (for the registry)
-- Dockerfile
-- Kubernetes manifest
+- A Dockerfile
+- A Kubernetes manifest
 
-See `app/manifests.yml` and `app/service1/Dockerfile` for examples of Kubernetes manifests and a Dockerfile.
-
-## Helm
-
-- What's Helm?
-- `helm install stable/wordpress`
-
-## Connect:
+## Tooling overview
 
 ### kubefwd
 
-- What's kubefwd?
-- kubefwd in action: `sudo kubefwd svc -n namespace`
+kubefwd port forwards every single service to your local host, so you can access any endpoint as if you were in the cluster, e.g. with a hostname like `http://database/`. 
+
+It's useful to develop a new service from scratch on your machine and have it talk to the services in your cluster, and also for debugging where you can e.g. run a bunch of weird queries on Postman locally.
+
+Run it with `sudo kubefwd svc`, or `sudo kubefwd svc -n namespace` to target a specific namespace.
 
 ### Telepresence
 
-- What's kubefwd?
-- kubefwd in action.
+Telepresence let's you switch a deployment that's running in a cluster with a local, development version of it that you have running locally. It does so via a bunch of network proxy witchcraft trickery.
 
-## Build & Deploy:
+To run the development version of your service where all the network activity gets proxied to/from the cluster, do `telepresence --swap-deployment <deployment-name> --expose <port> --run <./my-app>
 
-### Garden
+### skaffold
 
-What it does:
-- Build & deploy
-- Stack graph/dependencies
-- Tests
-- In-cluster building
-- Hot reload
-- Dashboard
-- Log streaming
+skaffold monitors the source code of your application and re-builds and re-deploys whenever part of it changes. It is very quick and simple to set up.
 
-What you need:
-- Describe your system via config files
+It can be configured to reload files within live containers so they don't have to be re-built every time. This is great for changing static assets or to work with dynamic languages like Python and Ruby.
 
-Best fit for:
-- Complex projects with lots of moving parts
+To use skaffold you must already have your Kubernetes manifests and Dockerfiles set up.
 
-### Skaffold
-
-What it does:
-- Build & deploy
-- Hot reload
-
-What you need:
-- Simple configs
-- Kubernetes manifests
-
-Best fit for:
-- Quickly setting up simple projects
+To use skaffold with the example application, observe that you have a skaffold.yml file and run `skaffold dev`. Config: https://github.com/campoy/links/blob/master/microservices-rest/skaffold.yaml
 
 ### Tilt
 
-What it does:
-- Everything Skaffold does
-- Dashboard
-- Log streaming
+Tilt is functionally equivalent to skaffold, but it's pretty.
 
-What you need:
-- Same as Skaffold
+It has a really nice dashboard that opens automatically when you start Tilt. If it doesn't—it never does for me—you can open it manually at `http://localhost:10350/`.
 
-Best fit for:
-- Same as Skaffold
+To run it with the example app, observe that you have a Tiltfile present and run `tilt up`. Config: https://github.com/campoy/links/blob/master/step6/links/Tiltfile
 
-## Debug:
+### Garden
 
-### kubectl
+Garden does everything skaffold and Tilt do, with a ton of extra features on top. Some of them are:
+- It can run tests
+- It can run in CI
+- It keeps a dependency graph of your whole application
+- Builds can happen in-cluster (so you don't need minikube/docker on your machine)
+
+It's a lot of stuff, so visit https://docs.garden.io/ and check it out. Because of all the functionality that Garden has, it has a higher cognitive cost (read: learning curve) than skaffold/Tilt. Thus the trade-off to be observed when choosing a tool for the job is one of simplicity versus extra functionality.
+
+Running the example application with Garden requires observing a few details, see this commit: https://github.com/campoy/links/pull/1/commits/6e64d7dc33dc4dda74225888d2bfd4b1beef547f
+
+Garden then requires one project-level config file, like this: https://github.com/eysi09/links/blob/tools/microservices-rest/garden.yml
+
+And one module-level config file for each service, like this: https://github.com/eysi09/links/blob/tools/microservices-rest/web/garden.yml
+
+### kubectl debugging
+
+These basic commands might prove useful:
 
 - `kubectl apply -f obj.yaml`
 - `kubectl delete -f kuard-pod.yaml`
@@ -233,13 +127,12 @@ Best fit for:
 - `kubectl expose deployments <name> --port=2368`
 - `kubectl run <name> --image=registry.com/user/repo:1.0`
 
+Do peruse this document so that when you need something, you know where to find it: https://kubernetes.io/docs/reference/kubectl/cheatsheet/
+
 ### Squash
 
-- Attach a debugger to a running container
-- Multiple containers simultaneously
-- Using an IDE
+Squash let's you attach a debugger like Delve onto running containers. You can do it on multiple containers at a time and watch them communicate line by line.
 
-### Stern
+For more information about Squash, see: https://squash.solo.io/overview/
 
-- What it is
-- How to filter log streams
+And for a primer on using Delve (a debugger made specifically for go) see: https://medium.com/@ellenkorbes/debug-your-go-code-without-100-extra-printlns-384a86437f2b
