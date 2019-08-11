@@ -47,7 +47,7 @@ The main things to keep in mind are:
 - Example: 
 https://github.com/campoy/links/blob/master/step5/links/web.Dockerfile
 
-### Development workflow with only ko cluster with kubectl&docker
+### Development workflow with only kubectl&docker
 
 The main workflow consists of:
 
