@@ -47,7 +47,7 @@ The main things to keep in mind are:
 - Example: 
 https://github.com/campoy/links/blob/master/step5/links/web.Dockerfile
 
-## Development workflow with only ko cluster with kubectl&docker
+### Development workflow with only ko cluster with kubectl&docker
 
 The main workflow consists of:
 
@@ -60,6 +60,24 @@ To do that, you need to have set up in advance:
 - docker login (for the registry)
 - A Dockerfile
 - A Kubernetes manifest
+
+### kubectl debugging
+
+These basic commands might prove useful:
+
+- `kubectl apply -f obj.yaml`
+- `kubectl delete -f kuard-pod.yaml`
+- `kubectl exec -it pod -- bash`
+- `kubectl cp <pod-name>:/path/to/remote/file /path/to/local/file`
+- `kubectl delete <resource-name> <obj-name>`
+- `kubectl logs -f <pod>`
+- `kubectl get pods/ns`
+- `kubectl describe pods <pod>`
+- `kubectl port-forward <pod> 8080:8080`
+- `kubectl expose deployments <name> --port=2368`
+- `kubectl run <name> --image=registry.com/user/repo:1.0`
+
+Do peruse this document so that when you need something, you know where to find it: https://kubernetes.io/docs/reference/kubectl/cheatsheet/
 
 ## Tooling overview
 
@@ -75,7 +93,7 @@ Run it with `sudo kubefwd svc`, or `sudo kubefwd svc -n namespace` to target a s
 
 Telepresence let's you switch a deployment that's running in a cluster with a local, development version of it that you have running locally. It does so via a bunch of network proxy witchcraft trickery.
 
-To run the development version of your service where all the network activity gets proxied to/from the cluster, do `telepresence --swap-deployment <deployment-name> --expose <port> --run <./my-app>
+To run the development version of your service where all the network activity gets proxied to/from the cluster, do `telepresence --swap-deployment <deployment-name> --expose <port> --run <./my-app>`
 
 ### skaffold
 
@@ -110,24 +128,6 @@ Running the example application with Garden requires observing a few details, se
 Garden then requires one project-level config file, like this: https://github.com/eysi09/links/blob/tools/microservices-rest/garden.yml
 
 And one module-level config file for each service, like this: https://github.com/eysi09/links/blob/tools/microservices-rest/web/garden.yml
-
-### kubectl debugging
-
-These basic commands might prove useful:
-
-- `kubectl apply -f obj.yaml`
-- `kubectl delete -f kuard-pod.yaml`
-- `kubectl exec -it pod -- bash`
-- `kubectl cp <pod-name>:/path/to/remote/file /path/to/local/file`
-- `kubectl delete <resource-name> <obj-name>`
-- `kubectl logs -f <pod>`
-- `kubectl get pods/ns`
-- `kubectl describe pods <pod>`
-- `kubectl port-forward <pod> 8080:8080`
-- `kubectl expose deployments <name> --port=2368`
-- `kubectl run <name> --image=registry.com/user/repo:1.0`
-
-Do peruse this document so that when you need something, you know where to find it: https://kubernetes.io/docs/reference/kubectl/cheatsheet/
 
 ### Squash
 
